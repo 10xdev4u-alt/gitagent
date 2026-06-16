@@ -13,10 +13,17 @@ import type { ChatMessage } from '../providers/types.js';
 import type { ToolCall, ToolDefinition } from '../providers/types.js';
 import { buildToolContext, resolveToolDefs, toLLMToolDefs, type RunContext, type RunResult } from './context.js';
 import { estimateMessagesTokens } from './tokens.js';
+import { defaultRetryPolicy, isRetryableError, withRetry } from './retry.js';
+import { estimateCostUsd } from './cost.js';
+import { ObserverBus } from './observability.js';
 
 export interface RunOptions {
   /** Abort signal. */
   signal?: AbortSignal;
+  /** Observer bus for runtime events. */
+  observers?: ObserverBus;
+  /** Override retry policy. */
+  retry?: Partial<typeof defaultRetryPolicy>;
 }
 
 /** Run a single agent against an event. */
@@ -59,16 +66,33 @@ export async function runAgent(rc: RunContext, options: RunOptions = {}): Promis
       }
 
       steps++;
-      const response = await rc.provider.chat(messages, {
-        model: rc.manifest.frontmatter.model.name,
-        temperature: rc.manifest.frontmatter.model.temperature,
-        maxTokens: rc.manifest.frontmatter.model.maxTokens,
-        tools: llmTools,
-        signal: options.signal,
-      });
+      const response = await withRetry(
+        () =>
+          rc.provider.chat(messages, {
+            model: rc.manifest.frontmatter.model.name,
+            temperature: rc.manifest.frontmatter.model.temperature,
+            maxTokens: rc.manifest.frontmatter.model.maxTokens,
+            tools: llmTools,
+            signal: options.signal,
+          }),
+        {
+          ...(options.retry ?? {}),
+          ...(options.signal ? { signal: options.signal } : {}),
+          onRetry: (attempt, backoffMs, err) => {
+            rc.logger.warn(`retrying after error (attempt ${attempt}, backoff ${Math.round(backoffMs)}ms)`, { error: (err as Error).message });
+          },
+        },
+      );
 
+      const cost = estimateCostUsd(response.model, response.usage);
       usage.inputTokens += response.usage.inputTokens;
       usage.outputTokens += response.usage.outputTokens;
+      await options.observers?.emit({
+        type: 'step_end',
+        runId: rc.runId,
+        step: steps,
+        usage: { inputTokens: response.usage.inputTokens, outputTokens: response.usage.outputTokens, costUsd: cost },
+      });
 
       if (response.toolCalls.length === 0) {
         finalText = response.content;
@@ -131,7 +155,7 @@ export async function runAgent(rc: RunContext, options: RunOptions = {}): Promis
     ok: stopReason === 'completed' || stopReason === 'max_steps' || stopReason === 'max_tokens' || stopReason === 'timeout',
     finalText,
     toolExecutions,
-    usage,
+    usage: { ...usage, costUsd: estimateCostUsd(rc.manifest.frontmatter.model.name, usage) },
     steps,
     stopReason,
     ...(error ? { error } : {}),
