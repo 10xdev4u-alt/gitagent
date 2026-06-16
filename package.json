@@ -85,11 +85,15 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.0",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/diff": "^6.0.0",
     "@types/node": "^22.9.0",
     "tsup": "^8.3.5",
     "tsx": "^4.19.0",
     "typescript": "^5.6.3",
     "vitest": "^2.1.5"
+  },
+  "optionalDependencies": {
+    "better-sqlite3": "^12.11.1"
   }
 }

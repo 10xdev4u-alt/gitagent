@@ -22,12 +22,13 @@ export interface SqliteMemoryOptions {
 type Database = unknown;
 
 let cachedDatabase: Database = null;
-let cachedBetterSqlite3: typeof import('better-sqlite3') | null = null;
+let cachedBetterSqlite3: unknown = null;
 
-async function loadBetterSqlite3(): Promise<typeof import('better-sqlite3')> {
+async function loadBetterSqlite3(): Promise<unknown> {
   if (cachedBetterSqlite3) return cachedBetterSqlite3;
   try {
-    cachedBetterSqlite3 = (await import('better-sqlite3')) as unknown as typeof import('better-sqlite3');
+    const mod = await import('better-sqlite3');
+    cachedBetterSqlite3 = mod.default ?? mod;
     return cachedBetterSqlite3;
   } catch (err) {
     throw new Error(
@@ -113,13 +114,12 @@ export class SqliteMemory implements Memory {
 
   async list(prefix = ''): Promise<MemoryEntry[]> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const rows = (this.db as any)
-      .prepare(
-        prefix
-          ? 'SELECT * FROM memory WHERE key LIKE ? ORDER BY updated_at DESC'
-          : 'SELECT * FROM memory ORDER BY updated_at DESC',
-      )
-      .all(prefix ? `${prefix}%` : undefined) as Array<{
+    const stmt = (this.db as any).prepare(
+      prefix
+        ? 'SELECT * FROM memory WHERE key LIKE ? ORDER BY updated_at DESC'
+        : 'SELECT * FROM memory ORDER BY updated_at DESC',
+    );
+    const rows = (prefix ? stmt.all(`${prefix}%`) : stmt.all()) as Array<{
       key: string;
       content: string;
       metadata: string | null;
