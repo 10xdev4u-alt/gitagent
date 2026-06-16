@@ -1,0 +1,76 @@
+#!/usr/bin/env node
+/**
+ * gitagent CLI.
+ *
+ * Subcommands:
+ *   init [name]   Scaffold a new agent manifest in .github/agents/
+ *   validate      Validate all manifests in the repo
+ *   dev           Run the agent runner against a local fixture event
+ *   serve         Start the webhook server
+ *   list          List all registered agents
+ *   logs          Show recent agent run logs
+ *   memory        Inspect an agent's memory
+ *   config        Show resolved config
+ */
+
+import { Command } from 'commander';
+import { initCommand } from './cli/init.js';
+import { validateCommand } from './cli/validate.js';
+import { devCommand } from './cli/dev.js';
+import { serveCommand } from './cli/serve.js';
+import { listCommand } from './cli/list.js';
+import { configCommand } from './cli/config.js';
+
+const program = new Command();
+
+program
+  .name('gitagent')
+  .description('Persistent, versioned AI agents that live in your GitHub repository')
+  .version('0.1.0');
+
+program
+  .command('init [name]')
+  .description('Scaffold a new agent manifest in .github/agents/')
+  .option('-d, --description <text>', 'Agent description')
+  .option('-t, --trigger <event...>', 'One or more GitHub events to trigger on')
+  .option('-f, --force', 'Overwrite existing manifest', false)
+  .action(initCommand);
+
+program
+  .command('validate [path]')
+  .description('Validate all agent manifests in the repo (or a specific path)')
+  .action(validateCommand);
+
+program
+  .command('dev')
+  .description('Run an agent against a local fixture event (no server needed)')
+  .option('-e, --event <event>', 'Event name (e.g. issues.opened)', 'issues.opened')
+  .option('-a, --agent <name>', 'Agent name (defaults to first match for the event)')
+  .option('-p, --payload <file>', 'Path to a JSON payload file')
+  .option('-r, --repo <owner/name>', 'Repo context', 'me/r')
+  .option('--dry-run', 'Do not execute any tools that have side effects', false)
+  .action(devCommand);
+
+program
+  .command('serve')
+  .description('Start the webhook server')
+  .option('-p, --port <port>', 'Port to listen on', '3000')
+  .option('-s, --secret <secret>', 'Webhook secret (or set GITAGENT_WEBHOOK_SECRET)')
+  .option('--repo-root <path>', 'Path to the repo root', '.')
+  .action(serveCommand);
+
+program
+  .command('list')
+  .description('List all registered agents')
+  .option('--repo-root <path>', 'Path to the repo root', '.')
+  .action(listCommand);
+
+program
+  .command('config')
+  .description('Show resolved configuration (env, defaults)')
+  .action(configCommand);
+
+program.parseAsync(process.argv).catch((err) => {
+  console.error('Error:', err.message);
+  process.exit(1);
+});
