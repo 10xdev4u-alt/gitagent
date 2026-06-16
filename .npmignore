@@ -1,0 +1,14 @@
+node_modules/
+dist/
+build/
+out/
+coverage/
+.runtime/
+.cache/
+*.log
+.env
+.env.local
+.DS_Store
+.idea/
+.vscode/
+bun.lockb
