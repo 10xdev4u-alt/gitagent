@@ -13,6 +13,8 @@ export interface GitHubClientOptions {
   token: string;
   /** Optional base URL for GitHub Enterprise. */
   baseUrl?: string;
+  /** Optional factory to inject a mock client (for tests). */
+  clientFactory?: (token: string, baseUrl?: string) => unknown;
   /** Logger. */
   logger?: {
     debug: (msg: string, meta?: Record<string, unknown>) => void;
@@ -33,9 +35,14 @@ async function loadOctokit(): Promise<typeof import('@octokit/rest').Octokit> {
 
 /**
  * Create an Octokit client. The first call dynamically imports the SDK;
- * subsequent calls reuse the cached constructor.
+ * subsequent calls reuse the cached constructor. If a `clientFactory` is
+ * provided, it is used to build the client (useful for injecting mocks
+ * in tests).
  */
 export async function createGitHubClient(options: GitHubClientOptions): Promise<Octokit> {
+  if (options.clientFactory) {
+    return options.clientFactory(options.token, options.baseUrl) as Octokit;
+  }
   const OctokitCtor = await loadOctokit();
   return new OctokitCtor({
     auth: options.token,

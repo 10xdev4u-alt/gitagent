@@ -61,7 +61,7 @@ export interface ToolContext {
 /** Convert a Zod schema to a JSON Schema object for LLM tool definitions. */
 export function zodToJsonSchema(schema: z.ZodType<unknown>): Record<string, unknown> {
   // zod's built-in toJSONSchema isn't available across all versions; build a minimal one.
-  const def = (schema as unknown as { _def: { typeName: string; innerType?: z.ZodType<unknown>; value?: unknown; values?: unknown[]; shape?: () => Record<string, z.ZodType<unknown>> } })._def;
+  const def = (schema as unknown as { _def: { typeName: string; type?: z.ZodType<unknown>; innerType?: z.ZodType<unknown>; value?: unknown; values?: unknown[]; shape?: () => Record<string, z.ZodType<unknown>> } })._def;
   switch (def.typeName) {
     case 'ZodString':
       return { type: 'string' };
@@ -70,7 +70,7 @@ export function zodToJsonSchema(schema: z.ZodType<unknown>): Record<string, unkn
     case 'ZodBoolean':
       return { type: 'boolean' };
     case 'ZodArray':
-      return { type: 'array', items: zodToJsonSchema(def.innerType ?? z.unknown()) };
+      return { type: 'array', items: zodToJsonSchema((def.type ?? def.innerType ?? z.unknown()) as z.ZodType<unknown>) };
     case 'ZodObject': {
       const shape = def.shape?.() ?? {};
       const properties: Record<string, unknown> = {};
@@ -95,9 +95,9 @@ export function zodToJsonSchema(schema: z.ZodType<unknown>): Record<string, unkn
       return { anyOf: opts.map((o) => zodToJsonSchema(o)) };
     }
     case 'ZodOptional':
-      return zodToJsonSchema(def.innerType ?? z.unknown());
+      return zodToJsonSchema((def.innerType ?? def.type ?? z.unknown()) as z.ZodType<unknown>);
     case 'ZodNullable':
-      return { ...zodToJsonSchema(def.innerType ?? z.unknown()), nullable: true };
+      return { ...zodToJsonSchema((def.innerType ?? def.type ?? z.unknown()) as z.ZodType<unknown>), nullable: true };
     default:
       return {};
   }
