@@ -20,6 +20,8 @@ import { devCommand } from './cli/dev.js';
 import { serveCommand } from './cli/serve.js';
 import { listCommand } from './cli/list.js';
 import { configCommand } from './cli/config.js';
+import { memoryCommand, episodesCommand } from './cli/memory.js';
+import { logsCommand } from './cli/logs.js';
 
 const program = new Command();
 
@@ -69,6 +71,50 @@ program
   .command('config')
   .description('Show resolved configuration (env, defaults)')
   .action(configCommand);
+
+program
+  .command('memory <subcommand> <agent> [args...]')
+  .description('Inspect an agent\'s memory (subcommands: list | read | search | delete | episodes)')
+  .option('--prefix <prefix>', 'Filter list by key prefix', '')
+  .option('--repo-root <path>', 'Path to the repo root', '.')
+  .action(async (subcommand: string, agent: string, args: string[], options: { prefix?: string; repoRoot: string }) => {
+    if (subcommand === 'episodes') {
+      await episodesCommand(agent, options.repoRoot);
+      return;
+    }
+    if (!['list', 'read', 'search', 'delete'].includes(subcommand)) {
+      console.error(`Unknown memory subcommand: ${subcommand}`);
+      process.exit(1);
+    }
+    await memoryCommand({
+      agent,
+      subcommand: subcommand as 'list' | 'read' | 'search' | 'delete',
+      ...(args[0] !== undefined ? { key: args[0] } : {}),
+      ...(args[0] !== undefined && subcommand === 'search' ? { query: args[0] } : {}),
+      ...(options.prefix !== undefined ? { prefix: options.prefix } : {}),
+      repoRoot: options.repoRoot,
+    });
+  });
+
+program
+  .command('logs <agent>')
+  .description('Show recent runs for an agent')
+  .option('-n, --limit <n>', 'Max runs to show', '20')
+  .option('--repo-root <path>', 'Path to the repo root', '.')
+  .action(async (agent: string, options: { limit: string; repoRoot: string }) => {
+    await logsCommand({ agent, repoRoot: options.repoRoot, limit: Number.parseInt(options.limit, 10) });
+  });
+
+program
+  .command('run <agent>')
+  .description('Manually trigger an agent (alias for the /run HTTP endpoint)')
+  .option('-p, --payload <file>', 'Path to a JSON payload file')
+  .option('-a, --action <action>', 'Action name (e.g. "opened")')
+  .option('-r, --repo <owner/name>', 'Repo context', 'me/r')
+  .option('--dry-run', 'Do not execute any tools that have side effects', false)
+  .action(async (agent: string, options: { payload?: string; action?: string; repo: string; dryRun: boolean }) => {
+    await devCommand({ event: 'manual', agent, payload: options.payload, repo: options.repo, dryRun: options.dryRun, ...(options.action ? { action: options.action } : {}) });
+  });
 
 program.parseAsync(process.argv).catch((err) => {
   console.error('Error:', err.message);
