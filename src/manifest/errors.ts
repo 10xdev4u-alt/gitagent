@@ -38,7 +38,7 @@ export class ManifestError extends Error {
   }
 
   /** Pretty-print for CLI output. */
-  toString(): string {
+  override toString(): string {
     const where = this.path ? ` (in ${this.path})` : '';
     return `${this.name}[${this.code}]${where}: ${this.message}`;
   }

@@ -1,11 +1,12 @@
 /**
  * The manifest registry.
  *
- * Discovers all `.github/agents/**/*.md` files in a repo, loads and
- * validates them, and indexes them by event trigger for fast lookup.
+ * Discovers all markdown files in a repo's `.github/agents` directory,
+ * loads and validates them, and indexes them by event trigger for fast lookup.
  */
 
-import { promises as fs, type Dirent } from 'node:fs';
+import { promises as fs } from 'node:fs';
+import type { Dirent } from 'node:fs';
 import path from 'node:path';
 import { ManifestError } from './errors.js';
 import { loadManifest, parseManifest } from './loader.js';
@@ -34,7 +35,7 @@ export class ManifestRegistry {
     if (this.manifests.has(name)) {
       throw new ManifestError(
         'VALIDATION_FAILED',
-        `Duplicate manifest name "${name}" — each agent must have a unique name`,
+        `Duplicate manifest name "${name}" - each agent must have a unique name`,
         { path: manifest.path },
       );
     }
@@ -82,7 +83,7 @@ export class ManifestRegistry {
 
   /**
    * Load all manifests from a directory. Walks the directory recursively,
-   * reads every `*.md` file, parses + validates it, and adds it to the registry.
+   * reads every markdown file, parses + validates it, and adds it to the registry.
    *
    * @throws {ManifestError} on the first invalid manifest
    */

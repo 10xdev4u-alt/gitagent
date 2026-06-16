@@ -230,8 +230,9 @@ describe('ManifestFrontmatterSchema', () => {
     });
     expect(m.tools).toHaveLength(3);
     expect(m.tools[0]).toBe('github.post_comment');
-    if (typeof m.tools[1] !== 'string') {
-      expect(m.tools[1].approval).toBe('always');
+    const t1 = m.tools[1];
+    if (typeof t1 !== 'string' && t1 !== undefined) {
+      expect(t1.approval).toBe('always');
     }
     expect(m.metadata.owner).toBe('platform-team');
   });
