@@ -103,6 +103,8 @@ export class GitMemory implements Memory {
       };
     }
     await this.ensureDir();
+    const filePath = this.entryPath(key);
+    await fs.mkdir(path.dirname(filePath), { recursive: true });
     const existing = await this.read(key);
     const now = Date.now();
     const entry: MemoryEntry = {
@@ -112,7 +114,6 @@ export class GitMemory implements Memory {
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
     };
-    const filePath = this.entryPath(key);
     const data = this.encode
       ? JSON.stringify({ ...entry }, null, 2)
       : content;

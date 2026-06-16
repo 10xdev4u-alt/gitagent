@@ -55,7 +55,11 @@ export class EpisodicMemory {
         }
       })
       .filter((e): e is Episode & { key: string } => e !== null);
-    parsed.sort((a, b) => b.timestamp - a.timestamp);
+    parsed.sort((a, b) => {
+      if (b.timestamp !== a.timestamp) return b.timestamp - a.timestamp;
+      // Tiebreaker: more recent key first (keys are `${ts}-${slug}`, so desc lex = most recent)
+      return b.key.localeCompare(a.key);
+    });
     return parsed.slice(0, limit);
   }
 

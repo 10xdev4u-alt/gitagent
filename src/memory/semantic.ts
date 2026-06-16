@@ -16,23 +16,26 @@ export interface SemanticMemoryOptions {
   embed?: (text: string) => Promise<number[]> | number[];
 }
 
-/** A simple bag-of-words embedder. */
+/** A simple FNV-1a hash for token -> bucket mapping. */
+function fnv1a(s: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h;
+}
+
+/** A simple bag-of-words embedder using a fixed 256-bucket hash space. */
 function defaultEmbed(text: string): number[] {
   const tokens = text
     .toLowerCase()
     .replace(/[^a-z0-9\s]/g, ' ')
     .split(/\s+/)
     .filter((t) => t.length > 2);
-  const counts: Record<string, number> = {};
-  for (const t of tokens) {
-    counts[t] = (counts[t] ?? 0) + 1;
-  }
-  // Return a fixed-size vector with the top 256 tokens
-  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 256);
   const vec: number[] = new Array(256).fill(0);
-  for (let i = 0; i < sorted.length; i++) {
-    const [_token, count] = sorted[i]!;
-    vec[i] = count;
+  for (const t of tokens) {
+    vec[fnv1a(t) % 256] += 1;
   }
   return vec;
 }
