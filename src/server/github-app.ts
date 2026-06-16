@@ -1,29 +1,24 @@
 /**
  * GitHub App authentication.
  *
- * Generates a JWT for the app, exchanges it for an installation token,
- * and caches the token until it expires.
+ * Generates a JWT for the app and exchanges it for installation tokens.
+ * The token manager caches tokens until they expire.
+ *
+ * The JWT itself is signed with the app's private key and is sufficient
+ * to call GitHub's REST API as the app (e.g. for listing installations).
+ * To act on behalf of an installation, you need an installation token.
  */
 
 import { createSign } from 'node:crypto';
-
-let cachedApp: typeof import('@octokit/auth-app').App | null = null;
-
-async function loadAuthApp(): Promise<typeof import('@octokit/auth-app').App> {
-  if (cachedApp) return cachedApp;
-  const mod = await import('@octokit/auth-app');
-  cachedApp = mod.App;
-  return cachedApp;
-}
 
 export interface GitHubAppCredentials {
   /** App ID. */
   appId: string | number;
   /** Private key (PEM). */
   privateKey: string;
-  /** Client ID (optional). */
+  /** Client ID (optional, for OAuth flows). */
   clientId?: string;
-  /** Client secret (optional). */
+  /** Client secret (optional, for OAuth flows). */
   clientSecret?: string;
 }
 
@@ -53,7 +48,7 @@ function base64urlFromBuffer(buf: Buffer): string {
   return buf.toString('base64url');
 }
 
-/** A cached installation token. */
+/** A GitHub installation access token. */
 export interface InstallationToken {
   token: string;
   expiresAt: string;
@@ -66,57 +61,33 @@ interface TokenCacheEntry {
   expiresAt: number;
 }
 
+/** A function that exchanges a JWT for an installation token. */
+export type TokenExchanger = (jwt: string, installationId: number) => Promise<InstallationToken>;
+
 /**
  * Token manager that exchanges an app's JWT for installation tokens
  * and caches them until they expire.
  */
 export class InstallationTokenManager {
   private readonly cache: Map<string, TokenCacheEntry> = new Map();
-  private readonly app: unknown;
-  private readonly appId: string | number;
+  private readonly creds: GitHubAppCredentials;
+  private readonly exchanger: TokenExchanger;
 
-  constructor(creds: GitHubAppCredentials) {
-    this.appId = creds.appId;
-    // Note: we don't actually call loadAuthApp() here because it requires async
-    // and the constructor is sync. The token method is async and lazy-loads.
-    this.app = null;
-  }
-
-  /** Get the credentials, lazy-loading the SDK. */
-  private async getApp(creds: GitHubAppCredentials): Promise<unknown> {
-    if (this.app) return this.app;
-    const AppCtor = await loadAuthApp();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const app = new (AppCtor as any)({
-      appId: creds.appId,
-      privateKey: creds.privateKey,
-      ...(creds.clientId ? { clientId: creds.clientId } : {}),
-      ...(creds.clientSecret ? { clientSecret: creds.clientSecret } : {}),
-    });
-    (this as { app: unknown }).app = app;
-    return app;
+  constructor(creds: GitHubAppCredentials, exchanger?: TokenExchanger) {
+    this.creds = creds;
+    this.exchanger = exchanger ?? defaultTokenExchanger;
   }
 
   /** Get an installation token, using the cache if possible. */
-  async getInstallationToken(
-    creds: GitHubAppCredentials,
-    installationId: number,
-  ): Promise<string> {
-    const key = `${this.appId}:${installationId}`;
+  async getInstallationToken(installationId: number): Promise<string> {
+    const key = `${this.creds.appId}:${installationId}`;
     const cached = this.cache.get(key);
     const now = Date.now();
     if (cached && cached.expiresAt > now + 60_000) {
       return cached.token.token;
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const app: any = await this.getApp(creds);
-    const result = await app.getInstallationAccessToken({ installationId });
-    const token: InstallationToken = {
-      token: result.data.token,
-      expiresAt: result.data.expires_at,
-      permissions: result.data.permissions ?? {},
-      repositorySelection: result.data.repository_selection ?? null,
-    };
+    const jwt = generateAppJwt(this.creds.appId, this.creds.privateKey);
+    const token = await this.exchanger(jwt, installationId);
     // GitHub tokens are valid for 1 hour; cache for 50 minutes to be safe.
     const expiresAt = now + 50 * 60 * 1000;
     this.cache.set(key, { token, expiresAt });
@@ -125,7 +96,7 @@ export class InstallationTokenManager {
 
   /** Invalidate a cached token. */
   invalidate(installationId: number): void {
-    const key = `${this.appId}:${installationId}`;
+    const key = `${this.creds.appId}:${installationId}`;
     this.cache.delete(key);
   }
 
@@ -133,6 +104,45 @@ export class InstallationTokenManager {
   invalidateAll(): void {
     this.cache.clear();
   }
+
+  /** Number of cached tokens. */
+  get size(): number {
+    return this.cache.size;
+  }
+}
+
+/**
+ * Default token exchanger that calls GitHub's REST API.
+ *
+ * POST /app/installations/{installation_id}/access_tokens
+ * Authorization: Bearer {jwt}
+ */
+export async function defaultTokenExchanger(jwt: string, installationId: number): Promise<InstallationToken> {
+  const res = await fetch(`https://api.github.com/app/installations/${installationId}/access_tokens`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${jwt}`,
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+      'User-Agent': 'gitagent/0.1.0',
+    },
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to get installation token (${res.status}): ${text}`);
+  }
+  const data = (await res.json()) as {
+    token: string;
+    expires_at: string;
+    permissions?: Record<string, string>;
+    repository_selection?: string | null;
+  };
+  return {
+    token: data.token,
+    expiresAt: data.expires_at,
+    permissions: data.permissions ?? {},
+    repositorySelection: data.repository_selection ?? null,
+  };
 }
 
 /** Convenience: read app creds from environment. */
