@@ -9,4 +9,5 @@ export * from './github-client.js';
 export * from './github-comments.js';
 export * from './github-issues.js';
 export * from './github-prs.js';
+export * from './memory-tools.js';
 export * from './defaults.js';
