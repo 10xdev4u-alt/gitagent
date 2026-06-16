@@ -35,7 +35,8 @@ function defaultEmbed(text: string): number[] {
     .filter((t) => t.length > 2);
   const vec: number[] = new Array(256).fill(0);
   for (const t of tokens) {
-    vec[fnv1a(t) % 256] += 1;
+    const idx = fnv1a(t) % 256;
+    vec[idx] = (vec[idx] ?? 0) + 1;
   }
   return vec;
 }
