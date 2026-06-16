@@ -48,7 +48,7 @@ describe('InstallationTokenManager', () => {
     };
     const mgr = new InstallationTokenManager(
       { appId: '123', privateKey: 'k' },
-      exchanger,
+      { exchanger, jwtProvider: () => 'fake-jwt' },
     );
     const t1 = await mgr.getInstallationToken(1);
     const t2 = await mgr.getInstallationToken(1);
@@ -75,7 +75,7 @@ describe('InstallationTokenManager', () => {
     };
     const mgr = new InstallationTokenManager(
       { appId: '123', privateKey: 'k' },
-      exchanger,
+      { exchanger, jwtProvider: () => 'fake-jwt' },
     );
     // First call: cached for 50 min, but the underlying token is already expired.
     // We still trust our local cache for 50 min, so calls = 1.
@@ -105,7 +105,7 @@ describe('InstallationTokenManager', () => {
     });
     const mgr = new InstallationTokenManager(
       { appId: '123', privateKey: 'k' },
-      exchanger,
+      { exchanger, jwtProvider: () => 'fake-jwt' },
     );
     await mgr.getInstallationToken(1);
     await mgr.getInstallationToken(2);

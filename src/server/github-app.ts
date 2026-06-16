@@ -64,6 +64,9 @@ interface TokenCacheEntry {
 /** A function that exchanges a JWT for an installation token. */
 export type TokenExchanger = (jwt: string, installationId: number) => Promise<InstallationToken>;
 
+/** A function that returns a fresh JWT. */
+export type JwtProvider = () => string;
+
 /**
  * Token manager that exchanges an app's JWT for installation tokens
  * and caches them until they expire.
@@ -72,10 +75,12 @@ export class InstallationTokenManager {
   private readonly cache: Map<string, TokenCacheEntry> = new Map();
   private readonly creds: GitHubAppCredentials;
   private readonly exchanger: TokenExchanger;
+  private readonly jwtProvider: JwtProvider;
 
-  constructor(creds: GitHubAppCredentials, exchanger?: TokenExchanger) {
+  constructor(creds: GitHubAppCredentials, options: { exchanger?: TokenExchanger; jwtProvider?: JwtProvider } = {}) {
     this.creds = creds;
-    this.exchanger = exchanger ?? defaultTokenExchanger;
+    this.exchanger = options.exchanger ?? defaultTokenExchanger;
+    this.jwtProvider = options.jwtProvider ?? (() => generateAppJwt(creds.appId, creds.privateKey));
   }
 
   /** Get an installation token, using the cache if possible. */
@@ -86,7 +91,7 @@ export class InstallationTokenManager {
     if (cached && cached.expiresAt > now + 60_000) {
       return cached.token.token;
     }
-    const jwt = generateAppJwt(this.creds.appId, this.creds.privateKey);
+    const jwt = this.jwtProvider();
     const token = await this.exchanger(jwt, installationId);
     // GitHub tokens are valid for 1 hour; cache for 50 minutes to be safe.
     const expiresAt = now + 50 * 60 * 1000;
