@@ -5,3 +5,4 @@
 export * from './app.js';
 export * from './webhook-signature.js';
 export * from './normalize.js';
+export * from './github-app.js';
