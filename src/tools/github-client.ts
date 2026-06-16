@@ -43,10 +43,18 @@ export async function createGitHubClient(options: GitHubClientOptions): Promise<
     userAgent: 'gitagent/0.1.0',
     log: options.logger
       ? {
-          debug: (msg, info) => options.logger?.debug(msg, info as Record<string, unknown>),
-          info: (msg, info) => options.logger?.info(msg, info as Record<string, unknown>),
-          warn: (msg, info) => options.logger?.warn(msg, info as Record<string, unknown>),
-          error: (msg, info) => options.logger?.error(msg, info as Record<string, unknown>),
+          debug: ((msg: string, info?: unknown) => {
+            options.logger?.debug(msg, info as Record<string, unknown>);
+          }) as never,
+          info: ((msg: string, info?: unknown) => {
+            options.logger?.info(msg, info as Record<string, unknown>);
+          }) as never,
+          warn: ((msg: string, info?: unknown) => {
+            options.logger?.warn(msg, info as Record<string, unknown>);
+          }) as never,
+          error: ((msg: string, info?: unknown) => {
+            options.logger?.error(msg, info as Record<string, unknown>);
+          }) as never,
         }
       : undefined,
   });
