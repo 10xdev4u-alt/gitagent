@@ -78,14 +78,13 @@ export function parseManifest(raw: string, filePath = '<string>'): Manifest {
     throw new ManifestValidationError(filePath, issues);
   }
 
-  // Additional cross-field checks
+  // Soft check: filename should usually match the agent name.
   const m = result.data;
-  if (m.frontmatter.name !== path.basename(filePath, path.extname(filePath)).toLowerCase()) {
-    // soft check: warn but don't fail. The filename and name should usually match.
-    // We just log to console for now.
+  const expectedName = path.basename(filePath, path.extname(filePath)).toLowerCase();
+  if (filePath !== '<string>' && m.frontmatter.name !== expectedName) {
     // eslint-disable-next-line no-console
     console.warn(
-      `[gitagent] manifest name "${m.frontmatter.name}" does not match filename "${path.basename(filePath)}"`,
+      `[gitagent] manifest name "${m.frontmatter.name}" does not match filename "${expectedName}"`,
     );
   }
 
