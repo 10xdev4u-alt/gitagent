@@ -18,7 +18,7 @@ function makeManifest(): Manifest {
       name: 'test',
       triggers: ['issues.opened'],
       memory: { type: 'in-memory', path: 'memory', maxSizeBytes: 1048576, semantic: false },
-      tools: ['echo'],
+      tools: [],
       approval: { read: 'never', write: 'required', planFirst: false, mention: [] },
       model: { provider: 'openai', name: 'test-model', temperature: 0, maxTokens: 1024 },
       limits: { maxSteps: 5, timeoutMs: 30_000, maxTotalTokens: 100_000, maxToolCalls: 10 },
