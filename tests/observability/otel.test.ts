@@ -30,6 +30,17 @@ describe('OtelAdapter', () => {
     expect(typeof observer).toBe('function');
     // Should not throw when called
     observer({ type: 'run_start', runId: 'r1', agent: 'a' });
-    observer({ type: 'run_end', runId: 'r1', ok: true });
+    observer({
+      type: 'run_end',
+      runId: 'r1',
+      result: {
+        ok: true,
+        steps: 0,
+        finalText: '',
+        toolExecutions: [],
+        stopReason: 'completed',
+        usage: { inputTokens: 0, outputTokens: 0, costUsd: 0 },
+      },
+    });
   });
 });
