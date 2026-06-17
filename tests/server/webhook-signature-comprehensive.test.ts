@@ -29,9 +29,9 @@ describe('verifyWebhookSignature', () => {
     expect(verifyWebhookSignature('{"different":true}', sig, secret)).toBe(false);
   });
 
-  it('handles sha1 prefix', () => {
+  it('rejects sha1 (only sha256 is supported)', () => {
     const sig = `sha1=${createHmac('sha1', secret).update(body).digest('hex')}`;
-    expect(verifyWebhookSignature(body, sig, secret)).toBe(true);
+    expect(verifyWebhookSignature(body, sig, secret)).toBe(false);
   });
 
   it('rejects when signature is empty', () => {
