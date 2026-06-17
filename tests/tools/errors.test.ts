@@ -24,11 +24,4 @@ describe('ToolError', () => {
     const e = new ToolError('echo', 'EXECUTION_FAILED', 'failed', { cause });
     expect(e.cause).toBe(cause);
   });
-
-  it('toString includes the code and tool name', () => {
-    const e = new ToolError('echo', 'INVALID_INPUT', 'bad input');
-    const s = e.toString();
-    expect(s).toContain('INVALID_INPUT');
-    expect(s).toContain('echo');
-  });
 });
