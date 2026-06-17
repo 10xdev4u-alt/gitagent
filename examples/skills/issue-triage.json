@@ -1,0 +1,14 @@
+{
+  "name": "issue-triage",
+  "description": "Tools for triaging new issues (label, comment, close, search)",
+  "tools": [
+    "github.post_comment",
+    "github.add_labels",
+    "github.remove_label",
+    "github.search_issues",
+    "github.close_issue",
+    "github.reopen_issue",
+    "github.assign"
+  ],
+  "personality": "You are a careful, friendly issue triager. Be concise. One short comment per issue."
+}

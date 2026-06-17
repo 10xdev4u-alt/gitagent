@@ -1,0 +1,13 @@
+{
+  "name": "gh-pr-review",
+  "description": "Tools and personality for reviewing a pull request end-to-end",
+  "tools": [
+    "github.get_file",
+    "github.list_pull_requests",
+    "github.list_workflow_runs",
+    "github.post_comment",
+    "github.add_labels",
+    "github.add_reaction"
+  ],
+  "personality": "You are a careful, friendly code reviewer. Be specific, cite file:line, and never approve a PR yourself."
+}
