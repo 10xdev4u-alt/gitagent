@@ -15,12 +15,16 @@ export interface OtelAdapterOptions {
   serviceName?: string;
 }
 
-let cachedApi: typeof import('@opentelemetry/api') | null = null;
+// @ts-expect-error - @opentelemetry/api is an optional peer dep
+type OtelApi = unknown;
+// @ts-expect-error - @opentelemetry/api is an optional peer dep
+let cachedApi: OtelApi = null;
 
-async function loadApi(): Promise<typeof import('@opentelemetry/api') | null> {
+async function loadApi(): Promise<unknown> {
   if (cachedApi) return cachedApi;
   try {
-    cachedApi = await import('@opentelemetry/api');
+    const mod = await import('@opentelemetry/api');
+    cachedApi = mod;
     return cachedApi;
   } catch {
     return null;
