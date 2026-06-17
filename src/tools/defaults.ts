@@ -26,6 +26,12 @@ import {
   makeMergePRTool,
   makeRequestReviewTool,
 } from './github-prs.js';
+import {
+  makeGetFileTool,
+  makeListIssuesTool,
+  makeListPullRequestsTool,
+  makeListWorkflowRunsTool,
+} from './github-read.js';
 
 /** Build a registry with all default tools registered. */
 export function createDefaultToolRegistry(options: GitHubClientOptions): ToolRegistry {
@@ -50,5 +56,9 @@ export function defaultTools(options: GitHubClientOptions): ToolDefinition[] {
     makeRequestReviewTool(options),
     makeMergePRTool(options),
     makeAddReactionTool(options),
+    makeGetFileTool(options),
+    makeListWorkflowRunsTool(options),
+    makeListIssuesTool(options),
+    makeListPullRequestsTool(options),
   ];
 }
