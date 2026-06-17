@@ -47,7 +47,7 @@ describe('nonEmptyString', () => {
     expect(nonEmptyString('', ctx)).toMatch(/non-empty/);
   });
   it('rejects a non-string', () => {
-    expect(nonEmptyString(123 as unknown, ctx)).toMatch(/non-empty/);
+    expect(nonEmptyString(123, ctx)).toMatch(/non-empty/);
   });
 });
 
@@ -100,8 +100,8 @@ describe('httpsOnly', () => {
   it('rejects an http URL', () => {
     expect(httpsOnly('http://example.com', ctx)).toMatch(/https/);
   });
-  it('rejects an invalid URL', () => {
-    expect(httpsOnly('not a url', ctx)).toMatch(/not a valid URL/);
+  it('rejects a non-string', () => {
+    expect(httpsOnly(123, ctx)).toMatch(/must be a string URL/);
   });
 });
 
