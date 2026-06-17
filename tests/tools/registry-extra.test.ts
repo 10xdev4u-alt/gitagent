@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { ToolRegistry } from '../../src/tools/registry.js';
-import { ToolError } from '../../src/tools/errors.js';
+import { ManifestError } from '../../src/manifest/errors.js';
 import { z } from 'zod';
 
 describe('ToolRegistry', () => {
@@ -36,7 +36,7 @@ describe('ToolRegistry', () => {
     const r = new ToolRegistry();
     const tool = { name: 'a', description: 'a', inputSchema: z.object({}), execute: async () => ({}) };
     r.register(tool);
-    expect(() => r.register(tool)).toThrow(ToolError);
+    expect(() => r.register(tool)).toThrow(ManifestError);
   });
 
   it('size returns the number of tools', () => {
