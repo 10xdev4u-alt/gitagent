@@ -12,7 +12,7 @@ import { ManifestRegistry, type Manifest } from '../manifest/index.js';
 import { ProviderRegistry } from '../providers/registry.js';
 import { GitMemory, InMemoryStore, type Memory } from '../memory/index.js';
 import { createDefaultToolRegistry } from '../tools/defaults.js';
-import { runAgent, type RunContext, type RunResult } from '../runtime/runner.js';
+import { runAgent, type RunContext, type RunResult } from '../runtime/index.js';
 
 export interface ReplayOptions {
   logPath: string;
@@ -86,9 +86,9 @@ export async function replayCommand(options: ReplayOptions): Promise<void> {
     dryRun: options.dryRun,
     logger: {
       debug: () => {},
-      info: (msg) => console.error(`[info] ${msg}`),
-      warn: (msg) => console.error(`[warn] ${msg}`),
-      error: (msg) => console.error(`[error] ${msg}`),
+      info: (msg: string) => console.error(`[info] ${msg}`),
+      warn: (msg: string) => console.error(`[warn] ${msg}`),
+      error: (msg: string) => console.error(`[error] ${msg}`),
     },
   };
 
