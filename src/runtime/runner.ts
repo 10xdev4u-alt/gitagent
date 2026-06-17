@@ -40,6 +40,13 @@ export async function runAgent(rc: RunContext, options: RunOptions = {}): Promis
   let stopReason: RunResult['stopReason'] = 'completed';
   let error: string | undefined;
 
+  // Fire run_start event
+  await options.observers?.emit({
+    type: 'run_start',
+    runId: rc.runId,
+    agent: rc.manifest.frontmatter.name,
+  });
+
   const maxSteps = rc.manifest.frontmatter.limits.maxSteps;
   const maxTotalTokens = rc.manifest.frontmatter.limits.maxTotalTokens;
   const timeoutMs = rc.manifest.frontmatter.limits.timeoutMs;
@@ -151,7 +158,7 @@ export async function runAgent(rc: RunContext, options: RunOptions = {}): Promis
     error = (err as Error).message;
   }
 
-  return {
+  const result: RunResult = {
     ok: stopReason === 'completed' || stopReason === 'max_steps' || stopReason === 'max_tokens' || stopReason === 'timeout',
     finalText,
     toolExecutions,
@@ -160,6 +167,15 @@ export async function runAgent(rc: RunContext, options: RunOptions = {}): Promis
     stopReason,
     ...(error ? { error } : {}),
   };
+
+  // Fire run_end event (after result is built)
+  await options.observers?.emit({
+    type: 'run_end',
+    runId: rc.runId,
+    result,
+  });
+
+  return result;
 }
 
 /* ------------------------------------------------------------------ */

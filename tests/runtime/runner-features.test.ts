@@ -132,9 +132,10 @@ describe('runAgent with retry', () => {
       }),
     };
     const rc = ctxBase({ provider });
-    await expect(
-      runAgent(rc, { retry: { maxAttempts: 5, initialBackoffMs: 1, maxBackoffMs: 10, backoffMultiplier: 2, jitterFactor: 0 } }),
-    ).rejects.toThrow();
+    const result = await runAgent(rc, { retry: { maxAttempts: 5, initialBackoffMs: 1, maxBackoffMs: 10, backoffMultiplier: 2, jitterFactor: 0 } });
+    // The runner catches non-retryable errors and reports them as a failed result
+    expect(result.ok).toBe(false);
+    expect(result.stopReason).toBe('error');
     expect(calls).toBe(1);
   });
 });
