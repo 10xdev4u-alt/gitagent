@@ -35,7 +35,10 @@ export async function exportCommand(options: ExportOptions): Promise<void> {
 
   const events: RuntimeEvent[] = [];
   const bus = new ObserverBus();
-  bus.add((event) => events.push(event));
+  bus.add((event) => {
+    events.push(event);
+    return Promise.resolve();
+  });
 
   const providers = ProviderRegistry.withDefaults();
   const provider = providers.forModel(manifest.frontmatter.model);
