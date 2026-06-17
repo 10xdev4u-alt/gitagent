@@ -47,6 +47,7 @@ describe('nonEmptyString', () => {
     expect(nonEmptyString('', ctx)).toMatch(/non-empty/);
   });
   it('rejects a non-string', () => {
+    // @ts-expect-error - intentionally passing wrong type
     expect(nonEmptyString(123, ctx)).toMatch(/non-empty/);
   });
 });
@@ -101,6 +102,7 @@ describe('httpsOnly', () => {
     expect(httpsOnly('http://example.com', ctx)).toMatch(/https/);
   });
   it('rejects a non-string', () => {
+    // @ts-expect-error - intentionally passing wrong type
     expect(httpsOnly(123, ctx)).toMatch(/must be a string URL/);
   });
 });
