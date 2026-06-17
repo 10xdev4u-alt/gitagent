@@ -22,6 +22,7 @@ import { listCommand } from './cli/list.js';
 import { configCommand } from './cli/config.js';
 import { memoryCommand, episodesCommand } from './cli/memory.js';
 import { logsCommand } from './cli/logs.js';
+import { replayCommand } from './cli/replay.js';
 
 const program = new Command();
 
@@ -103,6 +104,21 @@ program
   .option('--repo-root <path>', 'Path to the repo root', '.')
   .action(async (agent: string, options: { limit: string; repoRoot: string }) => {
     await logsCommand({ agent, repoRoot: options.repoRoot, limit: Number.parseInt(options.limit, 10) });
+  });
+
+program
+  .command('replay <logPath>')
+  .description('Replay a past agent run from a JSONL log file')
+  .option('--repo-root <path>', 'Path to the repo root', '.')
+  .option('--dry-run', 'Do not execute any tools that have side effects', false)
+  .option('--provider <name>', 'Override the LLM provider for the replay')
+  .action(async (logPath: string, options: { repoRoot: string; dryRun: boolean; provider?: string }) => {
+    await replayCommand({
+      logPath,
+      repoRoot: options.repoRoot,
+      dryRun: options.dryRun,
+      ...(options.provider ? { providerOverride: options.provider } : {}),
+    });
   });
 
 program
