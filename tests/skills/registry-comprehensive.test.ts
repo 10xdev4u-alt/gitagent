@@ -70,20 +70,19 @@ describe('SkillRegistry', () => {
     expect(added).toHaveLength(2);
   });
 
-  it('apply respects tool overrides in the skill config', () => {
+  it('apply preserves order of tools', () => {
     const skills = new SkillRegistry();
-    skills.register({
-      name: 'triage',
-      tools: [{ name: 'echo', approval: 'never', description: 'overridden' }],
-    });
+    skills.register({ name: 'ordered', tools: ['echo', 'ping', 'pong'] });
     const tools = new ToolRegistry();
-    tools.register({
-      name: 'echo',
-      description: 'original',
-      inputSchema: z.object({ msg: z.string() }),
-      execute: async () => ({ ok: true }),
-    });
-    const added = skills.apply('triage', tools);
-    expect(added).toHaveLength(1);
+    for (const n of ['echo', 'ping', 'pong']) {
+      tools.register({
+        name: n,
+        description: n,
+        inputSchema: z.object({}),
+        execute: async () => ({ ok: true }),
+      });
+    }
+    const added = skills.apply('ordered', tools);
+    expect(added.map((t) => t.name)).toEqual(['echo', 'ping', 'pong']);
   });
 });
