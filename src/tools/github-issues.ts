@@ -145,3 +145,71 @@ export function makeSearchIssuesTool(options: GitHubClientOptions): ToolDefiniti
     },
   };
 }
+
+export function makeCreateIssueTool(options: GitHubClientOptions): ToolDefinition {
+  return {
+    name: 'github.create_issue',
+    description: 'Create a new issue in the repository. Use this to file follow-ups or track work.',
+    inputSchema: z.object({
+      title: z.string().min(1).max(256).describe('Issue title'),
+      body: z.string().describe('Issue body, in markdown'),
+      labels: z.array(z.string()).default([]).describe('Optional label names to apply'),
+      assignees: z.array(z.string()).default([]).describe('Optional GitHub usernames to assign'),
+    }),
+    execute: async (input, ctx) => {
+      const args = input as { title: string; body: string; labels: string[]; assignees: string[] };
+      if (ctx.dryRun) {
+        ctx.logger.info(`[dry-run] would create issue: ${args.title}`);
+        return { ok: true, output: { dryRun: true, url: 'https://github.com/dryrun/issue' } };
+      }
+      try {
+        const client = await createGitHubClient(options);
+        const res = await client.issues.create({
+          owner: ctx.repo.owner,
+          repo: ctx.repo.name,
+          title: args.title,
+          body: args.body,
+          labels: args.labels,
+          assignees: args.assignees,
+        });
+        return { ok: true, output: { number: res.data.number, url: res.data.html_url } };
+      } catch (err) {
+        throw new ToolError('github.create_issue', 'GITHUB_API_ERROR', `Failed to create issue: ${(err as Error).message}`, { cause: err });
+      }
+    },
+  };
+}
+
+export function makeUpdateIssueTool(options: GitHubClientOptions): ToolDefinition {
+  return {
+    name: 'github.update_issue',
+    description: 'Update an issue\'s title, body, state, or labels. Cannot change assignees (use github.assign).',
+    inputSchema: z.object({
+      issueNumber: z.number().int().positive().describe('The issue number'),
+      title: z.string().min(1).max(256).optional().describe('New title'),
+      body: z.string().optional().describe('New body'),
+      state: z.enum(['open', 'closed']).optional().describe('New state'),
+    }),
+    execute: async (input, ctx) => {
+      const args = input as { issueNumber: number; title?: string; body?: string; state?: 'open' | 'closed' };
+      if (ctx.dryRun) {
+        ctx.logger.info(`[dry-run] would update issue #${args.issueNumber}`);
+        return { ok: true, output: { dryRun: true } };
+      }
+      try {
+        const client = await createGitHubClient(options);
+        const res = await client.issues.update({
+          owner: ctx.repo.owner,
+          repo: ctx.repo.name,
+          issue_number: args.issueNumber,
+          ...(args.title !== undefined ? { title: args.title } : {}),
+          ...(args.body !== undefined ? { body: args.body } : {}),
+          ...(args.state !== undefined ? { state: args.state } : {}),
+        });
+        return { ok: true, output: { number: res.data.number, state: res.data.state, title: res.data.title } };
+      } catch (err) {
+        throw new ToolError('github.update_issue', 'GITHUB_API_ERROR', `Failed to update issue: ${(err as Error).message}`, { cause: err });
+      }
+    },
+  };
+}

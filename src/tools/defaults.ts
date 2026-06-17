@@ -17,8 +17,10 @@ import {
 import {
   makeAssignTool,
   makeCloseIssueTool,
+  makeCreateIssueTool,
   makeReopenIssueTool,
   makeSearchIssuesTool,
+  makeUpdateIssueTool,
 } from './github-issues.js';
 import {
   makeAddReactionTool,
@@ -52,6 +54,8 @@ export function defaultTools(options: GitHubClientOptions): ToolDefinition[] {
     makeReopenIssueTool(options),
     makeAssignTool(options),
     makeSearchIssuesTool(options),
+    makeCreateIssueTool(options),
+    makeUpdateIssueTool(options),
     makeCreatePRTool(options),
     makeRequestReviewTool(options),
     makeMergePRTool(options),
