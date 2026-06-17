@@ -20,7 +20,7 @@ describe('ManifestError', () => {
 
   it('preserves the cause', () => {
     const cause = new Error('boom');
-    const e = new ManifestError('X', 'oops', { cause });
+    const e = new ManifestError('FILE_NOT_FOUND', 'oops', { cause });
     expect(e.cause).toBe(cause);
   });
 

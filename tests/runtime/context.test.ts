@@ -26,7 +26,7 @@ ${toolYaml}
       name: t.name,
       description: t.name,
       inputSchema: z.object({}),
-      execute: async () => ({ ok: true }),
+      execute: async () => ({ ok: true, output: null }),
     });
   }
   const noopLogger = {

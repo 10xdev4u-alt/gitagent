@@ -14,7 +14,7 @@ describe('ToolRegistry', () => {
       name: 'echo',
       description: 'echo',
       inputSchema: z.object({ msg: z.string() }),
-      execute: async () => ({ ok: true }),
+      execute: async () => ({ ok: true as const, output: null }),
     };
     r.register(tool);
     expect(r.get('echo')).toBe(tool);
@@ -22,8 +22,8 @@ describe('ToolRegistry', () => {
 
   it('lists all tools', () => {
     const r = new ToolRegistry();
-    r.register({ name: 'a', description: 'a', inputSchema: z.object({}), execute: async () => ({}) });
-    r.register({ name: 'b', description: 'b', inputSchema: z.object({}), execute: async () => ({}) });
+    r.register({ name: 'a', description: 'a', inputSchema: z.object({}), execute: async () => ({ ok: true as const, output: null }) });
+    r.register({ name: 'b', description: 'b', inputSchema: z.object({}), execute: async () => ({ ok: true as const, output: null }) });
     expect(r.list().map((t) => t.name).sort()).toEqual(['a', 'b']);
   });
 
@@ -34,7 +34,7 @@ describe('ToolRegistry', () => {
 
   it('throws on duplicate registration', () => {
     const r = new ToolRegistry();
-    const tool = { name: 'a', description: 'a', inputSchema: z.object({}), execute: async () => ({}) };
+    const tool = { name: 'a', description: 'a', inputSchema: z.object({}), execute: async () => ({ ok: true as const, output: null }) };
     r.register(tool);
     expect(() => r.register(tool)).toThrow(ManifestError);
   });
@@ -42,7 +42,7 @@ describe('ToolRegistry', () => {
   it('size returns the number of tools', () => {
     const r = new ToolRegistry();
     expect(r.size).toBe(0);
-    r.register({ name: 'a', description: 'a', inputSchema: z.object({}), execute: async () => ({}) });
+    r.register({ name: 'a', description: 'a', inputSchema: z.object({}), execute: async () => ({ ok: true as const, output: null }) });
     expect(r.size).toBe(1);
   });
 });
