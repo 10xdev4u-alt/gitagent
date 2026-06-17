@@ -13,8 +13,9 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { z } from 'zod';
-import { ToolRegistry, type ToolDefinition } from '../tools/registry.js';
+import { ToolRegistry } from '../tools/registry.js';
 import { ToolError } from '../tools/errors.js';
+import type { ToolDefinition } from '../tools/types.js';
 
 export const SkillConfigSchema = z.object({
   name: z.string().min(1),
